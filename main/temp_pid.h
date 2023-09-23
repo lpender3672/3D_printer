@@ -2,7 +2,7 @@
 
 class temp_PID {
 public:
-    temp_PID(byte _pwm_pin, byte _thermistor_pin);
+    temp_PID(byte _thermistor_pin, byte _pwm_pin);
 
     void set_PID(float Kp, float Ki, float Kd);
     void set_setpoint(float setpoint);

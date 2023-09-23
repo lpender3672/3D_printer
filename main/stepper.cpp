@@ -1,6 +1,6 @@
 #include "stepper.h"
 
-stepper::stepper(byte _step_pin, byte _direction_pin, bool _default_direction, byte _enable_pin, byte _limit_pin, float _max_position)
+stepper::stepper(byte _step_pin, byte _direction_pin, bool _default_direction, byte _enable_pin, byte _limit_pin, float _max_position = 300.0)
 {
     step_pin = _step_pin;
     direction_pin = _direction_pin;
@@ -16,7 +16,6 @@ stepper::stepper(byte _step_pin, byte _direction_pin, bool _default_direction, b
 void stepper::begin()
 {
     
-
     pinMode(step_pin, OUTPUT);
     pinMode(direction_pin, OUTPUT);
     pinMode(enable_pin, OUTPUT);

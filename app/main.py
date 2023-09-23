@@ -46,7 +46,6 @@ class scan_thread(QThread):
             pass
             # no printer found
         self.finished.emit(result)
-
     
 class print_thread(QThread):
     line_update = pyqtSignal(int)
@@ -57,12 +56,21 @@ class print_thread(QThread):
         self.serial = serial
         self.gcode = gcode
 
+        self.cancelled = False
+
 
     def run(self):
         
         i = 0
         for line in self.gcode:
+
+            if self.cancelled:
+                self.statusBar().showMessage("Print cancelled")
+                break
             
+            if line[0] == ';':
+                continue # skip comment lines
+
             # write line to serial port and wait for it to finish being sent
             
             self.serial.write(line.encode())
@@ -77,14 +85,8 @@ class print_thread(QThread):
             i+=1
             self.line_update.emit(i)
 
-            
-        self.statusBar().showMessage("Print complete")
-
-
-            
-
-        
-
+        else: 
+            self.statusBar().showMessage("Print complete")
 
 
 class MainWindow(QMainWindow):
@@ -108,18 +110,28 @@ class MainWindow(QMainWindow):
         self.scan_ports_thread.finished.connect(self.scan_ports_finished)
 
         load_gcode_button = QPushButton("Load GCode")
-        start_print_button = QPushButton("Start Print")
+        self.start_print_button = QPushButton("Start Print")
+        self.cancel_print_button = QPushButton("Cancel Print")
+        self.cancel_print_button.setEnabled(False)
 
         self.scan_ports_button.clicked.connect(self.scan_ports)
         load_gcode_button.clicked.connect(self.load_gcode)
-        start_print_button.clicked.connect(self.start_print)
+        self.start_print_button.clicked.connect(self.start_print)
+        self.cancel_print_button.clicked.connect(self.cancel_print)
+        
 
         self.list_widget = QListWidget()
+
+        # make list widget uneditable
+        self.list_widget.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        # make list widget unselectable
+        self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
 
         layout.addWidget(label)
         layout.addWidget(self.scan_ports_button)
         layout.addWidget(load_gcode_button)
-        layout.addWidget(start_print_button)
+        layout.addWidget(self.start_print_button)
+        layout.addWidget(self.cancel_print_button)
         layout.addWidget(self.list_widget)
 
         # set the central widget of the Window
@@ -169,6 +181,8 @@ class MainWindow(QMainWindow):
     
     def start_print(self):
         self.statusBar().showMessage("Starting print")
+        self.start_print_button.setEnabled(False)
+        self.cancel_print_button.setEnabled(True)
 
         ## send gcode to printer
         if self.list_widget.count() == 0:
@@ -182,15 +196,35 @@ class MainWindow(QMainWindow):
 
         self.print_thread = print_thread(self.serial, self.gcode)
         self.print_thread.line_update.connect(self.line_update)
+        self.print_thread.finished.connect(self.on_print_complete)
         self.print_thread.start()
+ 
+    def cancel_print(self):
+        self.print_thread.terminate()
+
+        self.serial.flush()
+        self.serial.close()
+        QThread.msleep(100)
+        self.serial.open()
 
     def line_update(self, i):
         self.list_widget.setCurrentRow(i)
+        # highlight current line
+        self.list_widget.item(i).setSelected(True)
+
+    def on_print_complete(self):
+        self.cancel_print_button.setEnabled(False)
+        self.start_print_button.setEnabled(True)
+
+    def on_exit(self):
+        if self.printer_found:
+            self.serial.close()
 
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
     window = MainWindow()
+    app.aboutToQuit.connect(window.on_exit)
 
     app.exec()

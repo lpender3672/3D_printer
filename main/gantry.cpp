@@ -33,6 +33,9 @@ void gantry::home(long step_delay) {
     byte xLim = R.get_limit_pin();
     byte yLim = L.get_limit_pin();
 
+    x = 0;
+    y = 0;
+
     // home X
     digitalWrite(RDir, LOW);
     digitalWrite(LDir, HIGH);
@@ -62,10 +65,11 @@ void gantry::home(long step_delay) {
     delay(step_delay);
 }
 
-void gantry::translate(float dx, float dy) {
+void gantry::translate(float dx, float dy, float de = 0.0) {
 
     float kx = 6400/40;
     float ky = 6400/40;
+    float ke = E.microsteps_pu;
 
     long Lsteps = 0;
     long Rsteps = 0;
@@ -76,31 +80,36 @@ void gantry::translate(float dx, float dy) {
     Rsteps += ky * dy;
     Lsteps += ky * dy;
 
+    long extruder_steps = ke * de;
+
     // Rsteps > Lsteps
     // 
     if (abs(Rsteps) > abs(Lsteps)) {
-        Bresenham_Step(R, Rsteps, L, Lsteps);
+        Bresenham_Step(R, Rsteps, L, Lsteps, extruder_steps);
     } else {
         
-        Bresenham_Step(L, Lsteps, R, Rsteps);
+        Bresenham_Step(L, Lsteps, R, Rsteps, extruder_steps);
     }
 
 }
 
-void gantry::Bresenham_Step(stepper& Astepper, long Asteps, stepper& Bstepper, long Bsteps){
+void gantry::Bresenham_Step(stepper& Astepper, long Asteps, stepper& Bstepper, long Bsteps, long Esteps){
     // abs Asteps > abs Bsteps required for proper operation
 
-    digitalWrite(Astepper.get_direction_pin(), Asteps < 0 ? LOW : HIGH);
-    digitalWrite(Bstepper.get_direction_pin(), Bsteps < 0 ? LOW : HIGH);
+    digitalWrite(Astepper.get_direction_pin(), Asteps < 0 ? (not Astepper.default_direction) : Astepper.default_direction);
+    digitalWrite(Bstepper.get_direction_pin(), Bsteps < 0 ? (not Bstepper.default_direction) : Bstepper.default_direction);
+    digitalWrite(E.get_direction_pin(),  Esteps < 0 ? (not E.default_direction) : E.default_direction);
 
     unsigned long abs_Asteps = abs(Asteps);
     unsigned long abs_Bsteps = abs(Bsteps);
+    unsigned long abs_Esteps = abs(Esteps);
     unsigned long abs_half_Asteps = abs_Asteps / 2;
     
     float step_delay = 200.0; // initial step delay
 
     unsigned long i = 0;
-    long over = 0;
+    long overB = 0;
+    long overE = 0;
 
     float min_interval = Astepper.get_min_interval();
     float interval_incriment = Astepper.get_interval_increment();
@@ -108,10 +117,16 @@ void gantry::Bresenham_Step(stepper& Astepper, long Asteps, stepper& Bstepper, l
     while (step_delay > min_interval && i < abs_half_Asteps) 
     {
         Astepper.single_step(step_delay);
-        over += abs_Bsteps;
-        if (over >= abs_Asteps){
-            over -= abs_Asteps;
+        overB += abs_Bsteps;
+        if (overB >= abs_Asteps){
+            overB -= abs_Asteps;
             Bstepper.single_step(step_delay);
+        }
+
+        overE += abs_Esteps;
+        if (overE >= abs_Asteps){
+            overE -= abs_Asteps;
+            E.single_step(step_delay);
         }
         
         step_delay -= interval_incriment;
@@ -129,10 +144,16 @@ void gantry::Bresenham_Step(stepper& Astepper, long Asteps, stepper& Bstepper, l
     while (i < max_speed_steps) 
     {
         Astepper.single_step(step_delay);
-        over += abs_Bsteps;
-        if (over >= abs_Asteps){
-            over -= abs_Asteps;
+        overB += abs_Bsteps;
+        if (overB >= abs_Asteps){
+            overB -= abs_Asteps;
             Bstepper.single_step(step_delay);
+        }
+
+        overE += abs_Esteps;
+        if (overE >= abs_Asteps){
+            overE -= abs_Asteps;
+            E.single_step(step_delay);
         }
 
         i++;
@@ -141,10 +162,16 @@ void gantry::Bresenham_Step(stepper& Astepper, long Asteps, stepper& Bstepper, l
     while (i < abs_Asteps) 
     {
         Astepper.single_step(step_delay);
-        over += abs_Bsteps;
-        if (over >= abs_Asteps){
-            over -= abs_Asteps;
+        overB += abs_Bsteps;
+        if (overB >= abs_Asteps){
+            overB -= abs_Asteps;
             Bstepper.single_step(step_delay);
+        }
+
+        overE += abs_Esteps;
+        if (overE >= abs_Asteps){
+            overE -= abs_Asteps;
+            E.single_step(step_delay);
         }
 
         step_delay += interval_incriment;
@@ -152,7 +179,7 @@ void gantry::Bresenham_Step(stepper& Astepper, long Asteps, stepper& Bstepper, l
     }
 }
 
-void gantry::move_line(float dx, float dy) {
+void gantry::move_line(float dx, float dy, float de = 0.0) {
     // boundary check
     if (x + dx > MAX_X || x + dx < 0) {
         return;
@@ -164,7 +191,7 @@ void gantry::move_line(float dx, float dy) {
     x+= dx;
     y+= dy;
 
-    translate(dx, dy);
+    translate(dx, dy, de);
 }
 
 void gantry::move_arc(float cx, float cy, float radius ,float theta) {
@@ -192,6 +219,6 @@ void gantry::move_arc(float cx, float cy, float radius ,float theta) {
     Serial.println();
   }
   
-  move_line(x,y);
+  move_line(x, y);
   
 }
