@@ -17,6 +17,8 @@ public:
         x = 0;
         y = 0;
     }
+
+    void set_min_interval(float min_interval);
     
     void translate(float dx, float dy, float de = 0.0);
 

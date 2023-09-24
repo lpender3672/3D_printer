@@ -180,10 +180,7 @@ class MainWindow(QMainWindow):
 
     
     def start_print(self):
-        self.statusBar().showMessage("Starting print")
-        self.start_print_button.setEnabled(False)
-        self.cancel_print_button.setEnabled(True)
-
+    
         ## send gcode to printer
         if self.list_widget.count() == 0:
             self.statusBar().showMessage("No GCode loaded")
@@ -193,6 +190,10 @@ class MainWindow(QMainWindow):
             return
         
         self.serial.timeout = 1000.0
+
+        self.statusBar().showMessage("Starting print")
+        self.start_print_button.setEnabled(False)
+        self.cancel_print_button.setEnabled(True)
 
         self.print_thread = print_thread(self.serial, self.gcode)
         self.print_thread.line_update.connect(self.line_update)

@@ -39,12 +39,12 @@ void setup()
 
     X.begin();
     X.set_motor_config(32, 200, 1);
-    X.set_min_interval(10);
+    X.set_min_interval(50);
     X.set_interval_increment(0.0);
 
     Y.begin();
     Y.set_motor_config(32, 200, 1);
-    Y.set_min_interval(10);
+    Y.set_min_interval(50);
     Y.set_interval_increment(0.0);
 
     Z.begin();
@@ -145,18 +145,29 @@ void processCommand() {
     case  0:
     case  1: { // line
 
-      float speed = parseNumber('F');
+      float speed = parseNumber('F', -1) / 60.0;
       float dx = parseNumber('X', mode_abs?px:0) - (mode_abs?px:0);
       float dy  = parseNumber('Y', mode_abs?py:0) - (mode_abs?py:0);
       float dz = parseNumber('Z', mode_abs?pz:0) - (mode_abs?pz:0);
       float de = parseNumber('E', mode_abs?pe:0) - (mode_abs?pe:0);
 
       if (speed > 0) {
-          float distance = sqrt(dx*dx + dy*dy + dz*dz + de*de);
-          long steps = distance * 6400 / 40;
-          float time = 60 * distance / speed; // speed in mm/min
-          float step_delay = time / steps * 1000000; // microseconds
-          Serial.println(step_delay);
+
+          // calculate distance
+          float fillament_diameter = 1.75; // mm
+          float nozzil_diameter = 0.4; // mm
+
+
+          float fillament_area = PI * fillament_diameter * fillament_diameter / 4;
+          float nozzil_area = PI * nozzil_diameter * nozzil_diameter / 4;
+
+          float fillament_speed = (nozzil_area / fillament_area) * speed; // mm/s of fillament
+          // convert mm/s to seconds per step
+
+          float E_step_delay = 1000000 / (E.microsteps_pu * fillament_speed * 2); // div by 2 because delay in rising and falling edge
+          float G_step_delay = 1000000 / (X.microsteps_pu * speed * 2); // div by 2 because delay in rising and falling edge
+
+          XY_gantry.set_min_interval(G_step_delay);
       }
 
       Z.translate(dz);

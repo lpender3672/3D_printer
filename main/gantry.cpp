@@ -26,6 +26,11 @@ void gantry::disable() {
     L.disable();
 }
 
+void gantry::set_min_interval(float min_interval) {
+    R.set_min_interval(min_interval);
+    L.set_min_interval(min_interval);
+}
+
 void gantry::home(long step_delay) {
     byte RDir = R.get_direction_pin();
     byte LDir = L.get_direction_pin();
@@ -113,6 +118,10 @@ void gantry::Bresenham_Step(stepper& Astepper, long Asteps, stepper& Bstepper, l
 
     float min_interval = Astepper.get_min_interval();
     float interval_incriment = Astepper.get_interval_increment();
+
+    if (interval_incriment == 0.0) { 
+        step_delay = min_interval; // basically if acceleration is disabled, use constant speed
+    }
 
     while (step_delay > min_interval && i < abs_half_Asteps) 
     {
