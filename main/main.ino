@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include "temp_pid.h"
 #include "gantry.h"
+#include "display.h"
 
 #define MAX_BUF 64
 char buffer[MAX_BUF];
+int   sofar;
 
 // pin assignments
 stepper X(2, 5, true, 8, 9);
@@ -17,7 +19,6 @@ temp_PID nozzle(A1, 44); // Input on A1,  output on pin 44 and set 45 to LOW
 temp_PID bed(A2, 46); // Input on pin A2,  output on pin 46 and set 47 to LOW
 
 bool mode_abs = true;
-int   sofar;
 
 long previous_millis;
 
@@ -249,24 +250,26 @@ void processCommand() {
 
     case 104:
     case 109: { // nozzle temp
-      float nozzle_temp = parseNumber('S') / 2.0;
+
+      break; // ignore for now
+
+      float nozzle_temp = parseNumber('S');
       nozzle.set_setpoint(nozzle_temp);
       // wait for nozzle to reach stable temp
-      while (nozzle.get_temp() < nozzle_temp) {
-        PID_update();
-      }
+      nozzle.wait_for_setpoint();
     
       break;
     }
 
     case 140:
     case 190: { // bed temp
-      float bed_temp = parseNumber('S') / 2.0;
+
+      break; // ignore for now
+
+      float bed_temp = parseNumber('S');
       bed.set_setpoint(bed_temp);
       // wait for bed to reach stable temp
-      while (bed.get_temp() < bed_temp) {
-        PID_update();
-      }
+      bed.wait_for_setpoint();
 
       break;
     }
@@ -277,7 +280,7 @@ void processCommand() {
 
 void PID_update() {
   long now = millis();
-  float dt = (now - previous_millis) / 1000.0;
+  long dt = now - previous_millis;
 
   // PID updates
   bed.update(dt);
