@@ -13,7 +13,7 @@ float c3 = 9.489e-8;
 
 
 float T_from_R(float R) { 
-    return -32.68084865 * log(R) + 388.24996975 // from model
+    return -32.68084865 * log(R) + 388.24996975; // from model
 }
 
 temp_PID::temp_PID(byte _thermistor_pin, byte _pwm_pin) {

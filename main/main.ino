@@ -39,13 +39,13 @@ void setup()
 
     X.begin();
     X.set_motor_config(32, 200, 1);
-    X.set_min_interval(20);
-    X.set_interval_increment(0.05);
+    X.set_min_interval(10);
+    X.set_interval_increment(0.0);
 
     Y.begin();
     Y.set_motor_config(32, 200, 1);
-    Y.set_min_interval(20);
-    Y.set_interval_increment(0.05);
+    Y.set_min_interval(10);
+    Y.set_interval_increment(0.0);
 
     Z.begin();
     Z.set_motor_config(32, 200, 8);
@@ -156,7 +156,7 @@ void processCommand() {
           long steps = distance * 6400 / 40;
           float time = 60 * distance / speed; // speed in mm/min
           float step_delay = time / steps * 1000000; // microseconds
-
+          Serial.println(step_delay);
       }
 
       Z.translate(dz);
