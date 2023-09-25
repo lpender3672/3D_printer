@@ -157,7 +157,6 @@ void processCommand() {
           float fillament_diameter = 1.75; // mm
           float nozzil_diameter = 0.4; // mm
 
-
           float fillament_area = PI * fillament_diameter * fillament_diameter / 4;
           float nozzil_area = PI * nozzil_diameter * nozzil_diameter / 4;
 
