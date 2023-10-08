@@ -16,7 +16,7 @@ stepper E(12, 13, false, 8, 11);
 gantry XY_gantry(X, Y, E);
 
 temp_PID nozzle(A1, 44); // Input on A1,  output on pin 44 and set 45 to LOW
-temp_PID bed(A2, 46); // Input on pin A2,  output on pin 46 and set 47 to LOW
+temp_PID bed(A2, 45); // Input on pin A2,  output on pin 46 and set 47 to LOW
 
 bool mode_abs = true;
 
@@ -26,6 +26,10 @@ void setup()
 {
     Serial.begin(115200);
     Serial.println("3Dprinter");
+
+    // fan control pins
+    pinMode(46, OUTPUT);
+    pinMode(47, OUTPUT);
 
     nozzle.set_PID(3, 0.01, 0);
     pinMode(45, OUTPUT);
@@ -254,6 +258,8 @@ void processCommand() {
 
     case 106: { // set fan speed
       float fan_speed = parseNumber('S');
+      analogWrite(46, fan_speed);
+      analogWrite(47, fan_speed);
       // set fan speed
       break;
     }
