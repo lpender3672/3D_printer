@@ -1,9 +1,7 @@
 
-*.SLDPRT
-*.SLDASM
+
 *.STL
 
-CAD/
 .vscode/
 
 *.gcode
