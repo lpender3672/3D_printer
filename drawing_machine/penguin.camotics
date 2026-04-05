@@ -1,0 +1,13 @@
+{
+      "units": "metric",
+      "resolution-mode": "medium",
+      "resolution": 1,
+      "tools": {},
+      "workpiece": {
+        "automatic": true,
+        "margin": 5
+      },
+      "files": [
+        "newfile.tpl"
+      ]
+    }
